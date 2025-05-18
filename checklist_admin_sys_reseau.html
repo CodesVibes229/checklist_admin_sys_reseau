@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parcours Admin Système & Réseau - Checklist</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      background-color: #f9f9f9;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    .month {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background-color: #fff;
+      border-left: 5px solid #007BFF;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin: 0.5rem 0;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      background-color: #007BFF;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #reset {
+      background-color: #dc3545;
+    }
+    #reset:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Checklist - Formation Administrateur Système & Réseau (6 mois)</h1>
+
+  <div id="checklist"></div>
+
+  <button id="reset" onclick="resetChecklist()">Réinitialiser la checklist</button>
+  <button onclick="exportProgress()">Exporter la progression</button>
+
+  <script>
+    const data = [
+      {
+        month: "Mois 1 : Bases fondamentales",
+        tasks: [
+          "Installer Linux (Ubuntu ou Debian) en VM",
+          "Apprendre les commandes de base du terminal Linux",
+          "Comprendre le modèle OSI et TCP/IP",
+          "Configurer une IP statique et tester la connectivité entre deux VMs"
+        ]
+      },
+      {
+        month: "Mois 2 : Linux avancé et Windows Server",
+        tasks: [
+          "Gérer les utilisateurs et permissions Linux",
+          "Configurer SSH, cron et sauvegardes avec rsync",
+          "Installer Windows Server et configurer l'Active Directory",
+          "Configurer un client Windows dans un domaine AD"
+        ]
+      },
+      {
+        month: "Mois 3 : Administration réseau",
+        tasks: [
+          "Configurer DNS, DHCP et routage sur Linux",
+          "Utiliser les outils de diagnostic réseau (ping, traceroute, nmap)",
+          "Analyser le trafic réseau avec Wireshark",
+          "Documenter une architecture réseau locale"
+        ]
+      },
+      {
+        month: "Mois 4 : Sécurité et supervision",
+        tasks: [
+          "Configurer UFW et Fail2ban sur Linux",
+          "Mettre en place des sauvegardes automatisées",
+          "Installer un outil de supervision (Zabbix, Nagios, etc.)",
+          "Surveiller un service et envoyer une alerte en cas de panne"
+        ]
+      },
+      {
+        month: "Mois 5 : Virtualisation et Docker",
+        tasks: [
+          "Utiliser VirtualBox ou Proxmox pour virtualiser des serveurs",
+          "Installer Docker et lancer un conteneur Nginx",
+          "Créer un docker-compose simple avec une base de données",
+          "Déployer une stack web complète avec Docker"
+        ]
+      },
+      {
+        month: "Mois 6 : Portfolio et projet final",
+        tasks: [
+          "Créer un portfolio technique sur GitHub",
+          "Documenter ses projets avec README et captures",
+          "Simuler une infrastructure complète dans un lab",
+          "Préparer son CV technique et son profil LinkedIn"
+        ]
+      }
+    ];
+
+    function saveProgress() {
+      const checkboxes = document.querySelectorAll("input[type='checkbox']");
+      const progress = Array.from(checkboxes).map(cb => cb.checked);
+      localStorage.setItem("admin_checklist", JSON.stringify(progress));
+    }
+
+    function loadProgress() {
+      const saved = JSON.parse(localStorage.getItem("admin_checklist")) || [];
+      const checkboxes = document.querySelectorAll("input[type='checkbox']");
+      checkboxes.forEach((cb, i) => {
+        cb.checked = saved[i] || false;
+      });
+    }
+
+    function resetChecklist() {
+      localStorage.removeItem("admin_checklist");
+      document.querySelectorAll("input[type='checkbox']").forEach(cb => cb.checked = false);
+    }
+
+    function exportProgress() {
+      const checkboxes = document.querySelectorAll("input[type='checkbox']");
+      let output = "Checklist - Formation Admin Système & Réseau\n\n";
+      let index = 0;
+
+      data.forEach(month => {
+        output += `\n${month.month}\n`;
+        month.tasks.forEach(task => {
+          const checked = checkboxes[index].checked ? "[x]" : "[ ]";
+          output += `${checked} ${task}\n`;
+          index++;
+        });
+      });
+
+      const blob = new Blob([output], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "checklist_admin_sys_reseau.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function buildChecklist() {
+      const container = document.getElementById("checklist");
+      let index = 0;
+      data.forEach((monthData, m) => {
+        const div = document.createElement("div");
+        div.className = "month";
+        const title = document.createElement("h2");
+        title.textContent = monthData.month;
+        div.appendChild(title);
+
+        monthData.tasks.forEach(task => {
+          const id = `cb-${index}`;
+          const label = document.createElement("label");
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.id = id;
+          checkbox.onchange = saveProgress;
+          label.appendChild(checkbox);
+          label.append(" " + task);
+          div.appendChild(label);
+          index++;
+        });
+
+        container.appendChild(div);
+      });
+      loadProgress();
+    }
+
+    buildChecklist();
+  </script>
+</body>
+</html>
