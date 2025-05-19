@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - Checklist Formation</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background-color: #f9f9f9; }
+    h1, h2 { color: #333; }
+    .month {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background-color: #fff;
+      border-left: 5px solid #007BFF;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    label { display: block; margin: 0.5rem 0; }
+    button {
+      margin: 1rem 1rem 0 0;
+      padding: 0.5rem 1rem;
+      background-color: #007BFF;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover { background-color: #0056b3; }
+    #reset { background-color: #dc3545; }
+    #reset:hover { background-color: #c82333; }
+    #logout { background-color: #6c757d; }
+    #logout:hover { background-color: #495057; }
+  </style>
+</head>
+<body>
+  <h1>Checklist - Formation Admin Système & Réseau</h1>
+  <div id="checklist"></div>
+
+  <div>
+    <button id="reset" onclick="resetChecklist()">Réinitialiser</button>
+    <button onclick="exportProgress()">Exporter</button>
+    <button id="logout" onclick="logout()">Se déconnecter</button>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:8000';
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+
+    const checklistDiv = document.getElementById('checklist');
+
+    async function loadTasks() {
+      try {
+        const res = await fetch(`${API_URL}/tasks`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Erreur API');
+        const data = await res.json();
+        renderTasks(data);
+      } catch (e) {
+        alert("Impossible de charger les données.");
+        logout();
+      }
+    }
+
+    function renderTasks(tasks) {
+      checklistDiv.innerHTML = '';
+      tasks.forEach((month, m) => {
+        const div = document.createElement('div');
+        div.className = 'month';
+        const title = document.createElement('h2');
+        title.textContent = month.month;
+        div.appendChild(title);
+
+        month.tasks.forEach((task, i) => {
+          const id = `cb-${m}-${i}`;
+          const label = document.createElement('label');
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.id = id;
+          checkbox.checked = task.checked || false;
+          checkbox.onchange = saveProgress;
+          label.appendChild(checkbox);
+          label.append(' ' + task.label);
+          div.appendChild(label);
+        });
+
+        checklistDiv.appendChild(div);
+      });
+    }
+
+    async function saveProgress() {
+      const monthDivs = checklistDiv.querySelectorAll('.month');
+      const progressData = [];
+
+      monthDivs.forEach(div => {
+        const monthTitle = div.querySelector('h2').textContent;
+        const tasks = [];
+        div.querySelectorAll('label').forEach(label => {
+          const cb = label.querySelector('input[type=checkbox]');
+          tasks.push({ label: label.textContent.trim(), checked: cb.checked });
+        });
+        progressData.push({ month: monthTitle, tasks });
+      });
+
+      try {
+        await fetch(`${API_URL}/tasks`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(progressData)
+        });
+      } catch {
+        alert("Erreur lors de la sauvegarde.");
+      }
+    }
+
+    function resetChecklist() {
+      if (!confirm("Confirmer la réinitialisation ?")) return;
+      checklistDiv.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+      saveProgress();
+    }
+
+    function exportProgress() {
+      const monthDivs = checklistDiv.querySelectorAll('.month');
+      let output = "Checklist - Formation Admin Système & Réseau\n\n";
+      monthDivs.forEach(div => {
+        const monthTitle = div.querySelector('h2').textContent;
+        output += `\n${monthTitle}\n`;
+        div.querySelectorAll('label').forEach(label => {
+          const cb = label.querySelector('input[type=checkbox]');
+          const checked = cb.checked ? '[x]' : '[ ]';
+          output += `${checked} ${label.textContent.trim()}\n`;
+        });
+      });
+
+      const blob = new Blob([output], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'checklist_admin_sys_reseau.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    }
+
+    loadTasks();
+  </script>
+</body>
+</html>

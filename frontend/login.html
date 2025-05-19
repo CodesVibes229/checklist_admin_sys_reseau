@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Connexion - Checklist Admin Système & Réseau</title>
+  <style>
+    body { font-family: Arial; background: #f9f9f9; padding: 2rem; }
+    .form { max-width: 300px; margin: auto; background: #fff; padding: 2rem; border: 1px solid #ccc; }
+    input, button { width: 100%; padding: 0.5rem; margin-top: 1rem; }
+    .error { color: red; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="form">
+    <h2>Connexion</h2>
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Mot de passe" />
+    <button onclick="login()">Se connecter</button>
+    <div id="error" class="error"></div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:8000';
+
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const error = document.getElementById('error');
+      error.textContent = '';
+
+      if (!email || !password) {
+        error.textContent = "Veuillez remplir tous les champs.";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/login`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ email, password })
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        localStorage.setItem('token', data.access_token);
+        window.location.href = "dashboard.html";
+      } catch {
+        error.textContent = "Identifiants invalides.";
+      }
+    }
+  </script>
+</body>
+</html>
